@@ -22,11 +22,11 @@ jobs:
     steps:
       # 1. Checks out your repository's code
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       # 2. Sets up the Node.js environment
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
         with:
           node-version: '20' # Specify the Node.js version you use
           cache: 'npm'
@@ -53,7 +53,6 @@ jobs:
       - name: Upload archive to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
         run: |
-          gh release upload \
-            ${{ github.event.release.tag_name || inputs.tag_name }} \
-            jules-release.tar.gz
+          gh release upload "$RELEASE_TAG" jules-release.tar.gz

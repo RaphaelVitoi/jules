@@ -10,7 +10,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { exec, execFile, ExecFileException } from 'child_process';
+import { execFile, ExecFileException } from 'node:child_process';
 
 const server = new McpServer({
   name: 'jules-mcp-server',
@@ -25,10 +25,11 @@ export async function startNewJulesTask(
     repo_name: string;
     user_task_description: string;
   },
-  dependencies: { execFile: typeof execFile } = { execFile }
+  dependencies?: { execFile?: typeof execFile }
 ): Promise<CallToolResult> {
+  const execFileFn = dependencies?.execFile ?? execFile;
   return new Promise((resolve) => {
-    dependencies.execFile('jules', ['remote', 'new', '--repo', repo_name, '--session', user_task_description], { encoding: 'utf8' }, (error: ExecFileException | null, stdout: string, stderr: string) => {
+    execFileFn('jules', ['remote', 'new', '--repo', repo_name, '--session', user_task_description], { encoding: 'utf8' }, (error: ExecFileException | null, stdout: string, stderr: string) => {
       if (error) {
         resolve({
           content: [
@@ -63,12 +64,14 @@ export async function startNewJulesTask(
   });
 }
 
-server.tool(
+server.registerTool(
   'start_new_jules_task',
-  'Starts a new Jules task.',
   {
-    repo_name: z.string().describe('The name of the repository in username/repo_name format.'),
-    user_task_description: z.string().describe('The description of the user task.'),
+    description: 'Starts a new Jules task.',
+    inputSchema: {
+      repo_name: z.string().describe('The name of the repository in username/repo_name format.'),
+      user_task_description: z.string().describe('The description of the user task.'),
+    },
   },
   (input: {
     repo_name: string;
@@ -76,13 +79,13 @@ server.tool(
   }) => startNewJulesTask(input, { execFile })
 );
 
-async function startServer() {
+async function startServer(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  startServer();
+  await startServer();
 }
 
 export default server;
