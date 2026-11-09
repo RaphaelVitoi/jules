@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { startNewJulesTask } from '../../src/jules';
-import { execFile } from 'child_process';
+import { startNewJulesTask } from '../jules.js';
+import { execFile } from 'node:child_process';
 
 type ParsedResult = {
   stdout?: string;
@@ -34,7 +34,12 @@ describe('Jules MCP Server', () => {
       expect.any(Function)
     );
 
-    const parsedResult = JSON.parse(result.content![0].text as string) as ParsedResult;
-    expect(parsedResult.stdout).toBe('success');
+    const firstContent = result.content![0];
+    if (firstContent && firstContent.type === 'text') {
+      const parsedResult = JSON.parse(firstContent.text) as ParsedResult;
+      expect(parsedResult.stdout).toBe('success');
+    } else {
+      throw new Error('Expected text content');
+    }
   });
 });
